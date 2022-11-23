@@ -3,6 +3,18 @@
 #define SESSION_FILE "/tmp/dwm-session"
 
 /* appearance */
+/*  Display modes of the tab bar: never shown, always shown, shown only in  */
+/*  monocle mode in the presence of several windows.                        */
+/*  Modes after showtab_nmodes are disabled.                                */
+enum showtab_modes { showtab_never, showtab_auto, showtab_nmodes, showtab_always};
+static const int showtab			= showtab_auto;        /* Default tab bar show mode */
+static const int toptab				= True;               /* False means bottom tab bar */
+
+static const unsigned int systraypinning = 0;   /* 0: sloppy systray follows selected monitor, >0: pin systray to monitor X */
+static const unsigned int systrayonleft = 0;   	/* 0: systray in the right corner, >0: systray on left of status text */
+static const unsigned int systrayspacing = 2;   /* systray spacing */
+static const int systraypinningfailfirst = 1;   /* 1: if pinning fails, display systray on the first monitor, False: display systray on the last monitor*/
+static const int showsystray        = 1;     /* 0 means no systray */
 static const int swallowfloating    = 0;        /* 1 means swallow floating windows by default */
 static const int user_bh            = 18;        /* 0 means that dwm will calculate bar height, >= 1 means dwm will user_bh as bar height */
 static const unsigned int borderpx  = 2;        /* border pixel of windows */
@@ -112,13 +124,7 @@ static const Layout layouts[] = {
 	{ "[]=",      tile },    /* first entry is default */
     { "TTT",      bstack },
 
-	{ "[@]",      spiral },
-	{ "[\\]",     dwindle },
-
-	{ "HHH",      grid },
-	{ "|M|",      centeredmaster },
 	{ "[M]",      monocle },
-
 	{ "><>",      NULL },    /* no layout function means floating behavior */
 	{ NULL,       NULL },
 };
@@ -164,7 +170,6 @@ static const Key keys[] = {
 	{ MODKEY|ShiftMask,             XK_l,      setcfact,       {.f = -0.25} },
 	{ MODKEY|ShiftMask,             XK_o,      setcfact,       {.f =  0.00} },
 	{ MODKEY|ControlMask,           XK_Return, zoom,           {0} },
-	{ MODKEY|ControlMask,             XK_x,      killunsel,      {0} },
 	{ MODKEY,                       XK_g,      reorganizetags, {0} },
 
     { MODKEY,                       XK_x,    unfloatvisible, {0} },
@@ -177,14 +182,11 @@ static const Key keys[] = {
 
     { MODKEY,                       XK_t,      setlayout,      {.v = &layouts[0]} },//tile
     { MODKEY|ShiftMask,             XK_t,      setlayout,      {.v = &layouts[1]} },//bottom tile
-    { MODKEY,                       XK_y,      setlayout,      {.v = &layouts[2]} },//spindle
-    { MODKEY|ShiftMask,             XK_y,      setlayout,      {.v = &layouts[3]} },//dwindle
-    { MODKEY,                       XK_r,      setlayout,      {.v = &layouts[4]} },//monocle
-    { MODKEY|ShiftMask,             XK_r,      setlayout,      {.v = &layouts[5]} },//centered Master
-    { MODKEY,                       XK_u,      setlayout,      {.v = &layouts[6]} },//grid
-    { MODKEY|ControlMask,           XK_t,      setlayout,      {.v = &layouts[7]} },//floating
+    { MODKEY|ControlMask,           XK_t,      setlayout,      {.v = &layouts[2]} },//monocle
+    { MODKEY,                       XK_y,      setlayout,      {.v = &layouts[3]} },//floating
 //	{ MODKEY,                       XK_space,  setlayout,      {0} },
 	{ MODKEY,                       XK_f,  togglefloating, {0} },
+	{ MODKEY|ShiftMask,             XK_y,      tabmode,        {-1} },
 
 	{ MODKEY,                       XK_0,      view,           {.ui = ~0 } },
 	{ MODKEY|ShiftMask,             XK_0,      tag,            {.ui = ~0 } },
@@ -248,6 +250,10 @@ static const Key keys[] = {
 	{ MODKEY|ControlMask|ShiftMask, XK_Left,   moveresizeedge, {.v = "L"} },
 	{ MODKEY|ControlMask|ShiftMask, XK_Right,  moveresizeedge, {.v = "R"} },
 
+    { MODKEY|ControlMask,           XK_m,      show,           {0} },
+	{ MODKEY|ShiftMask,             XK_m,      showall,        {0} },
+	{ MODKEY,                       XK_m,      hide,           {0} },
+
     { Mod1Mask|ControlMask,         XK_v,               spawn,      SHCMD(TERMINAL " -e pulsemixer") },
     { Mod1Mask|ShiftMask,           XK_s,               spawn,      SHCMD("maim -s ~/Data/screenshots/$(date +%Y-%m-%d-%s).png") },
     { ShiftMask,                    XK_Print,           spawn,      SHCMD("maim -s ~/Data/screenshots/$(date +%Y-%m-%d-%s).png") },
@@ -294,7 +300,7 @@ static const Key keys[] = {
     { Mod1Mask,                     XK_BackSpace,       spawn,      SHCMD("vimmouse") },
     { MODKEY|ControlMask,           XK_w,               spawn,      SHCMD(TERMINAL " -e links") },
 
-    { MODKEY,                       XK_n,               spawn,      SHCMD(TERMINAL " -e newsboat") },
+//    { MODKEY,                       XK_n,               spawn,      SHCMD(TERMINAL " -e newsboat") },
     { Mod1Mask|ShiftMask,           XK_w,               spawn,      SHCMD("sxiv -q -o -t -r ~/Data/Media/wallpapers") },
     { MODKEY|ShiftMask,             XK_g,               spawn,      SHCMD("gimp") },
     { MODKEY,                       XK_grave,           spawn,      SHCMD("alacritty") },
@@ -305,9 +311,9 @@ static const Key keys[] = {
     { MODKEY,                       XK_w,               spawn,      SHCMD(BROWSER) },
     { MODKEY|ShiftMask,             XK_v,               spawn,      SHCMD("minitube") },
 
-    { MODKEY,                       XK_m,               spawn,      SHCMD(TERMINAL " -e neomutt") },
+    { MODKEY,                       XK_n,               spawn,      SHCMD(TERMINAL " -e neomutt") },
     { MODKEY,                       XK_v,               spawn,      SHCMD("qbittorrent") },
-//    { MODKEY|ShiftMask,             XK_n,               spawn,      SHCMD(TERMINAL " -e nvim $HOME/.cache/ScratchNote.md") },
+    { MODKEY|ShiftMask,             XK_n,               spawn,      SHCMD(TERMINAL " -e nvim $HOME/.cache/ScratchNote.md") },
     { MODKEY|ControlMask,           XK_z,               spawn,      SHCMD("slock") },
     { MODKEY,                       XK_c,               spawn,      SHCMD("galculator") },
     { MODKEY|ControlMask,           XK_r,               spawn,      SHCMD("mpv --untimed --no-cache --no-osc --no-input-default-bindings --profile=low-latency --input-conf=/dev/null --title=webcam /dev/video0") },
@@ -331,8 +337,8 @@ static const Key keys[] = {
 /* click can be ClkTagBar, ClkLtSymbol, ClkStatusText, ClkWinTitle, ClkClientWin, or ClkRootWin */
 static const Button buttons[] = {
 	/* click                event mask      button          function        argument */
-	{ ClkLtSymbol,          0,              Button1,        setlayout,      {0} },
-	{ ClkLtSymbol,          0,              Button3,        setlayout,      {.v = &layouts[2]} },
+	{ ClkTagBar,            MODKEY,         Button1,        tag,            {0} },
+	{ ClkTagBar,            MODKEY,         Button3,        toggletag,      {0} },
 	{ ClkWinTitle,          0,              Button2,        zoom,           {0} },
 
 	{ ClkStatusText,        0,              Button1,        sendstatusbar,   {.i = 1 } },
@@ -350,5 +356,6 @@ static const Button buttons[] = {
 	{ ClkTagBar,            MODKEY,         Button1,        tag,            {0} },
 	{ ClkTagBar,            MODKEY,         Button3,        toggletag,      {0} },
 	{ ClkFollowSymbol,      0,              Button1,        togglefollow,   {0} },
+	{ ClkTabBar,            0,              Button1,        focuswin,       {0} },
 };
 
