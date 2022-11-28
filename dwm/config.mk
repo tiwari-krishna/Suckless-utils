@@ -5,7 +5,6 @@ VERSION = 6.4
 
 # paths
 PREFIX = /usr/local
-MANPREFIX = ${PREFIX}/share/man
 
 X11INC = /usr/X11R6/include
 X11LIB = /usr/X11R6/lib
@@ -19,7 +18,6 @@ FREETYPELIBS = -lfontconfig -lXft
 FREETYPEINC = /usr/include/freetype2
 # OpenBSD (uncomment)
 #FREETYPEINC = ${X11INC}/freetype2
-#MANPREFIX = ${PREFIX}/man
 #KVMLIB = -lkvm
 
 # includes and libs

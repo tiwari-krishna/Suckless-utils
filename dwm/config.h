@@ -10,6 +10,9 @@ enum showtab_modes { showtab_never, showtab_auto, showtab_nmodes, showtab_always
 static const int showtab			= showtab_auto;        /* Default tab bar show mode */
 static const int toptab				= True;               /* False means bottom tab bar */
 
+static const double activeopacity   = 1.0f;     /* Window opacity when it's focused (0 <= opacity <= 1) */
+static const double inactiveopacity = 0.95f;   /* Window opacity when it's inactive (0 <= opacity <= 1) */
+static       Bool bUseOpacity       = True;     /* Starts with opacity on any unfocused windows */
 static const unsigned int systraypinning = 0;   /* 0: sloppy systray follows selected monitor, >0: pin systray to monitor X */
 static const unsigned int systrayonleft = 0;   	/* 0: systray in the right corner, >0: systray on left of status text */
 static const unsigned int systrayspacing = 2;   /* systray spacing */
@@ -18,6 +21,7 @@ static const int showsystray        = 1;     /* 0 means no systray */
 static const int swallowfloating    = 0;        /* 1 means swallow floating windows by default */
 static const int user_bh            = 18;        /* 0 means that dwm will calculate bar height, >= 1 means dwm will user_bh as bar height */
 static const unsigned int borderpx  = 2;        /* border pixel of windows */
+static const unsigned int fborderpx = 3;        /* border pixel of floating windows */
 static const unsigned int snap      = 32;       /* snap pixel */
 static const unsigned int gappih    = 5;       /* horiz inner gap between windows */
 static const unsigned int gappiv    = 5;       /* vert inner gap between windows */
@@ -32,14 +36,17 @@ static const char col_gray1[]       = "#222222";
 static const char col_gray2[]       = "#444444";
 static const char col_gray3[]       = "#eeeeee";
 static const char col_gray4[]       = "#eeeeee";
-static const char col_cyan[]        = "#7A0099";
+static const char col_cyan[]        = "#4a04cc";
 static const char act_bor[]         = "#e6ede8";
 static const char inact_bor[]       = "#041c0b";
+static const char title_fg[]        = "#5cddf7";
+static const char title_bg[]        = "#1a1a21";
 static const char *colors[][3]      = {
 	/*               fg         bg         border   */
 	[SchemeNorm] = { col_gray3, col_gray1, inact_bor },
 	[SchemeSel]  = { col_gray4, col_cyan,  act_bor  },
 	[SchemeStatus]={ col_cyan, col_gray1,  NULL  },
+    [SchemeTitle]  = { title_fg, title_bg,  act_bor },
 };
 
 typedef struct {
@@ -56,6 +63,14 @@ static Sp scratchpads[] = {
 	{"spmpc",   spcmd3},
 };
 
+/* launcher commands (They must be NULL terminated) */
+static const char* launcher[]      = { "rofi", "-show", "drun", "-show-icons", NULL };
+
+static const Launcher launchers[] = {
+       /* command       name to display */
+	{ launcher,         "🪟" },
+};
+
 /* status bar */
 static const Block blocks[] = {
 	/* fg     command				interval	signal */
@@ -66,16 +81,6 @@ static const Block blocks[] = {
 	{ "#FF3080", "stat-wifi",			5,		8},
 	//{ "#FF9B30", "stat-weather",		0,		7},
 	{ "#FFF130",  "stat-music",			5,		5},
-/*	{ "#000001", "sb-moonphase",			0,		6},
-	{ "#1F0077", "sb-forecast",			0,		7},
-	{ "#000077", "sb-volume",			0,		8},
-	{ "#F77000", "sb-pacpackages",			0,		9},
-	{ "#177000", "sb-sync",				0,		10},
-//	{ col_gray1, "sb-mpc",				0,		26},
-	{ col_gray2, "sb-music",			0,		11},
-//	{ col_gray3, "sb-tasks",			10,		12},
-	{ col_gray4, "sb-notes",			0,		13},
-	{ col_cyan, "echo '';cat /tmp/recordingicon",	0,		14}, */
 };
 
 /* inverse the order of the blocks, comment to disable */
@@ -94,30 +99,28 @@ static const Rule rules[] = {
 	 *	WM_CLASS(STRING) = instance, class
 	 *	WM_NAME(STRING) = title
 	 */
-	/* class     instance  title           tags mask  isfloating  isterminal  noswallow  monitor */
-	{ "Gimp",    NULL,     NULL,           0,         1,          0,           0,        -1 },
-	{ "Firefox", NULL,     NULL,           0,         0,          0,          -1,        -1 },
-	{ "st",      NULL,     NULL,           0,         0,          1,           0,        -1 },
-	{ "Alacritty",      NULL,     NULL,           0,         0,          1,           0,        -1 },
-	{ NULL,      NULL,     "Event Tester", 0,         0,          0,           1,        -1 }, /* xev */
-    { NULL,		 "spterm",		NULL,		SPTAG(0),		1,	1,              0,		 -1 },
-	{ NULL,		 "spfm",		NULL,		SPTAG(1),		1,	1,              0,		 -1 },
-	{ NULL,		 "spmpc",	NULL,		SPTAG(2),		1,	1,              0,		 -1 },
+	/* class     instance  title           tags mask  isfloating  isterminal  noswallow  monitor  notallowed  isfreesize */
+	{ "Gimp",    NULL,     NULL,           0,         1,          0,           0,        -1,        0,          1 },
+	{ "Firefox", NULL,     NULL,           0,         0,          0,           0,        -1,        0,          0 },
+	{ "qBittorrent", NULL,   NULL,     1 << 8,        0,          0,           0,        -1,        0,          1 },
+	{ "st",      NULL,     NULL,           0,         0,          1,           0,        -1,        0,          0 },
+	{ "Alacritty",  NULL,   NULL,          0,         0,          1,           0,        -1,        0,          0 },
+	{ NULL,      NULL,     "Event Tester", 0,         0,          0,           1,        -1,        0,          0 }, /* xev */
+    { NULL,		 "spterm",		NULL,		SPTAG(0),		1,	1,              0,		 -1,        0,          0 },
+	{ NULL,		 "spfm",		NULL,		SPTAG(1),		1,	1,              0,		 -1,        0,          0 },
+	{ NULL,		 "spmpc",	    NULL,	    SPTAG(2),		1,	1,              0,		 -1,        0,          0 },
 };
-
-/* window following */
-#define WFACTIVE '>'
-#define WFINACTIVE 'v'
-#define WFDEFAULT WFINACTIVE
 
 /* layout(s) */
 static const float mfact     = 0.53; /* factor of master area size [0.05..0.95] */
 static const int nmaster     = 1;    /* number of clients in master area */
+static const int nmaxmaster  = 5;        /* maximum number of clients allowed in master area */
 static const int resizehints = 1;    /* 1 means respect size hints in tiled resizals */
-static const int lockfullscreen = 1; /* 1 will force focus on the fullscreen window */
+static const int lockfullscreen = 0; /* 1 will force focus on the fullscreen window */
+static const int mainmon = 0; /* xsetroot will only change the bar on this monitor */
 
 #define FORCE_VSPLIT 1  /* nrowgrid layout: force two clients to always split vertically */
-#include "vanitygaps.c"
+#include "functions.c"
 
 static const Layout layouts[] = {
 	/* symbol     arrange function */
@@ -126,16 +129,15 @@ static const Layout layouts[] = {
 
 	{ "[M]",      monocle },
 	{ "><>",      NULL },    /* no layout function means floating behavior */
-	{ NULL,       NULL },
 };
 
 /* key definitions */
 #define MODKEY Mod4Mask
 #define TAGKEYS(KEY,TAG) \
-	{ MODKEY,                       KEY,      view,           {.ui = 1 << TAG} }, \
-	{ MODKEY|ControlMask,           KEY,      toggleview,     {.ui = 1 << TAG} }, \
-	{ MODKEY|ShiftMask,             KEY,      tag,            {.ui = 1 << TAG} }, \
-	{ MODKEY|ControlMask|ShiftMask, KEY,      toggletag,      {.ui = 1 << TAG} },
+	{1, {{MODKEY, KEY}},                            view,           {.ui = 1 << TAG} }, \
+	{1, {{MODKEY|ControlMask, KEY}},                toggleview,     {.ui = 1 << TAG} }, \
+	{1, {{MODKEY|ShiftMask, KEY}},                  tag,            {.ui = 1 << TAG} }, \
+	{1, {{MODKEY|ControlMask|ShiftMask, KEY}},      toggletag,      {.ui = 1 << TAG} },
 
 /* helper for spawning shell commands in the pre dwm-5.0 fashion */
 #define SHCMD(cmd) { .v = (const char*[]){ "/bin/sh", "-c", cmd, NULL } }
@@ -148,56 +150,57 @@ static const Layout layouts[] = {
 static const char *dmenucmd[] = { "dmenu_run", "-fn", dmenufont, "-nb", col_gray1, "-nf", col_gray3, "-sb", col_cyan, "-sf", col_gray4, NULL };
 static const char *termcmd[]  = { "alacritty", NULL };
 
-static const Key keys[] = {
+static const Keychord keychords[] = {
 	/* modifier                     key        function        argument */
-	{ MODKEY,                       XK_space,  spawn,          {.v = dmenucmd } },
-	{ MODKEY,                       XK_Return, spawn,          {.v = termcmd } },
-	{ MODKEY,                       XK_s,      togglesticky,   {0} },
+	{1, {{MODKEY, XK_space}},                   spawn,          {.v = dmenucmd } },
+	{1, {{MODKEY, XK_Return}},                  spawn,          {.v = termcmd } },
+	{1, {{MODKEY, XK_s}},                       togglesticky,   {0} },
+    {1, {{MODKEY|ShiftMask, XK_s}},             toggleopacity,  {0} },
 
-	{ MODKEY,                       XK_b,      togglebar,      {0} },
-	{ MODKEY|ShiftMask,             XK_s,      togglefollow,   {0} },
-	{ MODKEY,                       XK_j,      focusstack,     {.i = +1 } },
-	{ MODKEY,                       XK_k,      focusstack,     {.i = -1 } },
-	{ MODKEY|ShiftMask,             XK_j,      movestack,      {.i = +1 } },
-	{ MODKEY|ShiftMask,             XK_k,      movestack,      {.i = -1 } },
+	{1, {{MODKEY, XK_b}},                       togglebar,      {0} },
+	{1, {{MODKEY, XK_j}},                       focusstack,     {.i = +1 } },
+	{1, {{MODKEY, XK_k}},                       focusstack,     {.i = -1 } },
+	{1, {{MODKEY|ShiftMask, XK_j}},             movestack,      {.i = +1 } },
+	{1, {{MODKEY|ShiftMask, XK_k}},             movestack,      {.i = -1 } },
 
-	{ MODKEY,                       XK_p,      incnmaster,     {.i = +1 } },
-	{ MODKEY,                       XK_o,      incnmaster,     {.i = -1 } },
-    { MODKEY|ShiftMask,             XK_p,      resetnmaster,   {0} },
-	{ MODKEY,                       XK_h,      setmfact,       {.f = -0.05} },
-	{ MODKEY,                       XK_l,      setmfact,       {.f = +0.05} },
-	{ MODKEY|ShiftMask,             XK_h,      setcfact,       {.f = +0.25} },
-	{ MODKEY|ShiftMask,             XK_l,      setcfact,       {.f = -0.25} },
-	{ MODKEY|ShiftMask,             XK_o,      setcfact,       {.f =  0.00} },
-	{ MODKEY|ControlMask,           XK_Return, zoom,           {0} },
-	{ MODKEY,                       XK_g,      reorganizetags, {0} },
+	{1, {{MODKEY|ControlMask, XK_k}},           incnmaster,     {.i = +1 } },
+	{1, {{MODKEY|ControlMask, XK_j}},           incnmaster,     {.i = -1 } },
+    {1, {{MODKEY|ControlMask, XK_l}},           resetnmaster,   {0} },
+	{1, {{MODKEY, XK_h}},                       setmfact,       {.f = -0.05} },
+	{1, {{MODKEY, XK_l}},                       setmfact,       {.f = +0.05} },
+	{1, {{MODKEY|ShiftMask, XK_h}},             setcfact,       {.f = +0.25} },
+	{1, {{MODKEY|ShiftMask, XK_l}},             setcfact,       {.f = -0.25} },
+	{1, {{MODKEY|ControlMask, XK_h}},           setcfact,       {.f =  0.00} },
+	{1, {{MODKEY|ControlMask, XK_Return}},      zoom,           {0} },
+	{1, {{MODKEY, XK_g}},                       reorganizetags, {0} },
 
-    { MODKEY,                       XK_x,    unfloatvisible, {0} },
-	{ MODKEY,		                XK_Tab,  cyclelayout,    {.i = +1 } },
-	{ MODKEY|ShiftMask,             XK_Tab, cyclelayout,    {.i = -1 } },
-	{ MODKEY|ShiftMask,             XK_f,      togglefullscr,  {0} },
-	{ MODKEY|ShiftMask,             XK_space,  togglealwaysontop, {0} },
-	{ MODKEY|ControlMask,           XK_Tab,    view,           {0} },
-	{ MODKEY,                       XK_q,      killclient,     {0} },
+    {1, {{MODKEY|ShiftMask, XK_r}},             unfloatvisible, {0} },
+    {1, {{MODKEY, XK_r}},                       movecenter,     {0} },
+	{1, {{MODKEY|ShiftMask, XK_f}},             togglefullscr,  {0} },
+	{1, {{MODKEY|ShiftMask, XK_space}},         togglealwaysontop, {0} },
+	{1, {{MODKEY|ControlMask, XK_Tab}},         view,           {0} },
 
-    { MODKEY,                       XK_t,      setlayout,      {.v = &layouts[0]} },//tile
-    { MODKEY|ShiftMask,             XK_t,      setlayout,      {.v = &layouts[1]} },//bottom tile
-    { MODKEY|ControlMask,           XK_t,      setlayout,      {.v = &layouts[2]} },//monocle
-    { MODKEY,                       XK_y,      setlayout,      {.v = &layouts[3]} },//floating
-//	{ MODKEY,                       XK_space,  setlayout,      {0} },
-	{ MODKEY,                       XK_f,  togglefloating, {0} },
-	{ MODKEY|ShiftMask,             XK_y,      tabmode,        {-1} },
+    {1, {{MODKEY, XK_t}},                       setlayout,      {.v = &layouts[0]} },//tile
+    {1, {{MODKEY|ShiftMask, XK_t}},             setlayout,      {.v = &layouts[1]} },//bottom tile
+    {1, {{MODKEY|ControlMask, XK_t}},           setlayout,      {.v = &layouts[2]} },//monocle
+    {1, {{MODKEY, XK_y}},                       setlayout,      {.v = &layouts[3]} },//floating
+	{1, {{MODKEY|ShiftMask, XK_y}},             tabmode,        {-1} },
+	{1, {{MODKEY, XK_f}},                       togglefloating, {0} },
+    {1, {{MODKEY|ShiftMask, XK_Tab}},           layoutscroll,   {.i = -1 } },
+	{1, {{MODKEY, XK_Tab}},                     layoutscroll,   {.i = +1 } },
+//	{1, {{MODKEY, XK_space}},                   setlayout,      {0} },
 
-	{ MODKEY,                       XK_0,      view,           {.ui = ~0 } },
-	{ MODKEY|ShiftMask,             XK_0,      tag,            {.ui = ~0 } },
-	{ MODKEY,                       XK_comma,  focusmon,       {.i = -1 } },
-	{ MODKEY,                       XK_period, focusmon,       {.i = +1 } },
-	{ MODKEY|ShiftMask,             XK_comma,  tagmon,         {.i = -1 } },
-	{ MODKEY|ShiftMask,             XK_period, tagmon,         {.i = +1 } },
+    {1, {{ControlMask|ShiftMask, XK_Return}},   focusurgent,    {0} },
+	{1, {{MODKEY, XK_0}},                       view,           {.ui = ~0 } },
+	{1, {{MODKEY|ShiftMask, XK_0}},             tag,            {.ui = ~0 } },
+	{1, {{MODKEY, XK_comma}},                   focusmon,       {.i = -1 } },
+	{1, {{MODKEY, XK_period}},                  focusmon,       {.i = +1 } },
+	{1, {{MODKEY|ShiftMask, XK_comma}},         tagmon,         {.i = -1 } },
+	{1, {{MODKEY|ShiftMask, XK_period}},        tagmon,         {.i = +1 } },
 
-	{ MODKEY|ShiftMask,            	XK_Return, 	  togglescratch,  {.ui = 0 } },
-	{ Mod1Mask|ShiftMask,           XK_Return,	  togglescratch,  {.ui = 1 } },
-	{ MODKEY|Mod1Mask,            	XK_Return,	  togglescratch,  {.ui = 2 } },
+	{1, {{MODKEY|ShiftMask, XK_Return}}, 	    togglescratch,  {.ui = 0 } },
+	{1, {{Mod1Mask|ShiftMask, XK_Return}},	    togglescratch,  {.ui = 1 } },
+	{1, {{MODKEY|Mod1Mask, XK_Return}},	        togglescratch,  {.ui = 2 } },
 
 	TAGKEYS(                        XK_1,                      0)
 	TAGKEYS(                        XK_2,                      1)
@@ -208,129 +211,133 @@ static const Key keys[] = {
 	TAGKEYS(                        XK_7,                      6)
 	TAGKEYS(                        XK_8,                      7)
 	TAGKEYS(                        XK_9,                      8)
-	{ MODKEY|ShiftMask,             XK_q,      quit,           {0} },
-	{ MODKEY|ControlMask,           XK_q,      quit,           {1} }, 
-	{ MODKEY,                       XK_Next, scratchpad_show, {0} },
-	{ MODKEY,                       XK_Prior, scratchpad_hide, {0} },
-	{ MODKEY,                       XK_End ,scratchpad_remove,{0} },
 
-    { MODKEY,                       XK_equal,  incrgaps,       {.i = +1 } },
-    { MODKEY,                       XK_minus,  incrgaps,       {.i = -1 } },
-    { MODKEY|ShiftMask,             XK_equal,  togglegaps,     {0} },
-    { MODKEY|ShiftMask,             XK_minus,  defaultgaps,    {0} },
+	{1, {{MODKEY, XK_q}},                       killclient,     {0} },
+	{1, {{MODKEY|ShiftMask, XK_q}},             quit,           {0} },
+	{1, {{MODKEY|ControlMask, XK_q}},           quit,           {1} }, 
 
-	{ MODKEY|ControlMask,           XK_i,      incrigaps,      {.i = +1 } },
-	{ MODKEY|ControlMask|ShiftMask, XK_i,      incrigaps,      {.i = -1 } },
-	{ MODKEY|ControlMask,           XK_o,      incrogaps,      {.i = +1 } },
-	{ MODKEY|ControlMask|ShiftMask, XK_o,      incrogaps,      {.i = -1 } },
+	{1, {{MODKEY,  XK_Next}},                   scratchpad_show, {0} },
+	{1, {{MODKEY,  XK_Prior}},                  scratchpad_hide, {0} },
+	{1, {{MODKEY,  XK_End}},                    scratchpad_remove,{0} },
 
-    { MODKEY|ControlMask,           XK_bracketleft,      shifttag,      { .i = -1 } },
-    { MODKEY|ControlMask,           XK_bracketright,     shifttag,      { .i = +1 } },
-    { MODKEY,                       XK_bracketleft,      shiftview,      { .i = -1 } },
-    { MODKEY,                       XK_bracketright,     shiftview,      { .i = +1 } },
-    { MODKEY|ShiftMask,             XK_bracketright,     shifttagclients,      { .i = +1 } },
-    { MODKEY|ShiftMask,             XK_bracketleft,      shifttagclients,      { .i = -1 } },
+    {1, {{MODKEY, XK_equal}},                   incrgaps,       {.i = +1 } },
+    {1, {{MODKEY, XK_minus}},                   incrgaps,       {.i = -1 } },
+    {1, {{MODKEY|ShiftMask, XK_equal}},         togglegaps,     {0} },
+    {1, {{MODKEY|ShiftMask, XK_minus}},         defaultgaps,    {0} },
+	{1, {{MODKEY|ControlMask, XK_i}},           incrigaps,      {.i = +1 } },
+	{1, {{MODKEY|ControlMask|ShiftMask, XK_i}}, incrigaps,      {.i = -1 } },
+	{1, {{MODKEY|ControlMask, XK_o}},           incrogaps,      {.i = +1 } },
+	{1, {{MODKEY|ControlMask|ShiftMask, XK_o}}, incrogaps,      {.i = -1 } },
 
-	{ MODKEY|ShiftMask,             XK_i,      aspectresize,   {.i = +24} },
-	{ MODKEY|ControlMask,           XK_i,      aspectresize,   {.i = -24} },
-	{ MODKEY,                       XK_Down,   moveresize,     {.v = "0x 25y 0w 0h" } },
-	{ MODKEY,                       XK_Up,     moveresize,     {.v = "0x -25y 0w 0h" } },
-	{ MODKEY,                       XK_Right,  moveresize,     {.v = "25x 0y 0w 0h" } },
-	{ MODKEY,                       XK_Left,   moveresize,     {.v = "-25x 0y 0w 0h" } },
-	{ MODKEY|ShiftMask,             XK_Down,   moveresize,     {.v = "0x 0y 0w 25h" } },
-	{ MODKEY|ShiftMask,             XK_Up,     moveresize,     {.v = "0x 0y 0w -25h" } },
-	{ MODKEY|ShiftMask,             XK_Right,  moveresize,     {.v = "0x 0y 25w 0h" } },
-	{ MODKEY|ShiftMask,             XK_Left,   moveresize,     {.v = "0x 0y -25w 0h" } },
-	{ MODKEY|ControlMask,           XK_Up,     moveresizeedge, {.v = "t"} },
-	{ MODKEY|ControlMask,           XK_Down,   moveresizeedge, {.v = "b"} },
-	{ MODKEY|ControlMask,           XK_Left,   moveresizeedge, {.v = "l"} },
-	{ MODKEY|ControlMask,           XK_Right,  moveresizeedge, {.v = "r"} },
-	{ MODKEY|ControlMask|ShiftMask, XK_Up,     moveresizeedge, {.v = "T"} },
-	{ MODKEY|ControlMask|ShiftMask, XK_Down,   moveresizeedge, {.v = "B"} },
-	{ MODKEY|ControlMask|ShiftMask, XK_Left,   moveresizeedge, {.v = "L"} },
-	{ MODKEY|ControlMask|ShiftMask, XK_Right,  moveresizeedge, {.v = "R"} },
+	{1, {{MODKEY|ShiftMask, XK_i}},             aspectresize,   {.i = -24} },
+	{1, {{MODKEY, XK_i}},                       aspectresize,   {.i = +24} },
+	{1, {{MODKEY, XK_Down}},                    moveresize,     {.v = "0x 25y 0w 0h" } },
+	{1, {{MODKEY, XK_Up}},                      moveresize,     {.v = "0x -25y 0w 0h" } },
+	{1, {{MODKEY, XK_Right}},                   moveresize,     {.v = "25x 0y 0w 0h" } },
+	{1, {{MODKEY, XK_Left}},                    moveresize,     {.v = "-25x 0y 0w 0h" } },
+	{1, {{MODKEY|ShiftMask, XK_Down}},          moveresize,     {.v = "0x 0y 0w 25h" } },
+	{1, {{MODKEY|ShiftMask, XK_Up}},            moveresize,     {.v = "0x 0y 0w -25h" } },
+	{1, {{MODKEY|ShiftMask, XK_Right}},         moveresize,     {.v = "0x 0y 25w 0h" } },
+	{1, {{MODKEY|ShiftMask, XK_Left}},          moveresize,     {.v = "0x 0y -25w 0h" } },
+	{1, {{MODKEY|ControlMask, XK_Up}},          moveresizeedge, {.v = "t"} },
+	{1, {{MODKEY|ControlMask, XK_Down}},        moveresizeedge, {.v = "b"} },
+	{1, {{MODKEY|ControlMask, XK_Left}},        moveresizeedge, {.v = "l"} },
+	{1, {{MODKEY|ControlMask, XK_Right}},       moveresizeedge, {.v = "r"} },
+	{1, {{MODKEY|ControlMask|ShiftMask, XK_Up}},    moveresizeedge, {.v = "T"} },
+	{1, {{MODKEY|ControlMask|ShiftMask, XK_Down}},  moveresizeedge, {.v = "B"} },
+	{1, {{MODKEY|ControlMask|ShiftMask, XK_Left}},  moveresizeedge, {.v = "L"} },
+	{1, {{MODKEY|ControlMask|ShiftMask, XK_Right}}, moveresizeedge, {.v = "R"} },
 
-    { MODKEY|ControlMask,           XK_m,      show,           {0} },
-	{ MODKEY|ShiftMask,             XK_m,      showall,        {0} },
-	{ MODKEY,                       XK_m,      hide,           {0} },
+    {1, {{MODKEY|ControlMask, XK_u}},           show,           {0} },
+	{1, {{MODKEY|ShiftMask, XK_u}},             showall,        {0} },
+	{1, {{MODKEY, XK_u}},                       hide,           {0} },
 
-    { Mod1Mask|ControlMask,         XK_v,               spawn,      SHCMD(TERMINAL " -e pulsemixer") },
-    { Mod1Mask|ShiftMask,           XK_s,               spawn,      SHCMD("maim -s ~/Data/screenshots/$(date +%Y-%m-%d-%s).png") },
-    { ShiftMask,                    XK_Print,           spawn,      SHCMD("maim -s ~/Data/screenshots/$(date +%Y-%m-%d-%s).png") },
-    { Mod1Mask,                     XK_s,               spawn,      SHCMD("maim ~/Data/screenshots/$(date +%Y-%m-%d-%s).png") },
+    {1, {{MODKEY|ShiftMask, XK_bracketleft}},   shiftboth,      { .i = -1 }	},
+    {1, {{MODKEY|ShiftMask, XK_bracketright}},  shiftboth,      { .i = +1 }	},
+    {1, {{MODKEY, XK_bracketleft}},             shiftview,      { .i = -1 }	},
+    {1, {{MODKEY, XK_bracketright}},            shiftview,      { .i = +1 }	},
+    {1, {{MODKEY|ControlMask, XK_bracketleft}}, shifttag,      { .i = -1 }	},
+    {1, {{MODKEY|ControlMask, XK_bracketright}}, shifttag,      { .i = +1 }	},
 
-    { 0, XK_Print,                                      spawn,      SHCMD("maim ~/Data/screenshots/$(date +%Y-%m-%d-%s).png") },
-    { 0, XF86XK_AudioMute,                              spawn,      SHCMD("pamixer -t; kill -36 $(pidof dwm)") },
-    { 0, XF86XK_AudioRaiseVolume,                       spawn,      SHCMD("pactl set-sink-volume @DEFAULT_SINK@ +3%; kill -36 $(pidof dwm)") },
-    { 0, XF86XK_AudioLowerVolume,                       spawn,      SHCMD("pactl set-sink-volume @DEFAULT_SINK@ -3%; kill -36 $(pidof dwm)") },
-    { 0, XF86XK_MonBrightnessUp,                        spawn,      SHCMD("xbacklight -inc 5%; kill -38 $(pidof dwm)") },
-    { 0, XF86XK_MonBrightnessDown,                      spawn,      SHCMD("xbacklight -dec 5%; kill -38 $(pidof dwm)") },
-    { 0, XF86XK_AudioPrev,                              spawn,      SHCMD("mpc prev; kill -39 $(pidof dwm)") },
-    { 0, XF86XK_AudioNext,                              spawn,      SHCMD("mpc next; kill -39 $(pidof dwm)") },
-    { 0, XF86XK_AudioPlay,                              spawn,      SHCMD("mpc toggle; kill -39 $(pidof dwm)") },
-    { 0, XF86XK_HomePage,                               spawn,      SHCMD(BROWSER) },
-    { Mod1Mask|MODKEY,              XK_equal,           spawn,      SHCMD("xbacklight -inc 5%; kill -38 $(pidof dwm)") },
-    { Mod1Mask|MODKEY,              XK_minus,           spawn,      SHCMD("xbacklight -dec 5%; kill -38 $(pidof dwm)") },
+    {1, {{Mod1Mask|ControlMask, XK_v}},                 spawn,      SHCMD(TERMINAL " -e pulsemixer") },
+    {1, {{Mod1Mask|ShiftMask, XK_s}},                   spawn,      SHCMD("maim -s ~/Data/screenshots/$(date +%Y-%m-%d-%s).png") },
+    {1, {{Mod1Mask, XK_c}},                             spawn,      SHCMD("maim -s ~/Data/screenshots/$(date +%Y-%m-%d-%s).png") },
+    {1, {{Mod1Mask, XK_s}},                             spawn,      SHCMD("maim ~/Data/screenshots/$(date +%Y-%m-%d-%s).png") },
 
-    { Mod1Mask,                     XK_Up,              spawn,      SHCMD("pactl set-sink-volume @DEFAULT_SINK@ +3%; kill -36 $(pidof dwm)") },
-    { Mod1Mask,                     XK_Down,            spawn,      SHCMD("pactl set-sink-volume @DEFAULT_SINK@ -3%; kill -36 $(pidof dwm)") },
-    { Mod1Mask|ShiftMask,           XK_space,           spawn,      SHCMD("mpc toggle; kill -39 $(pidof dwm)") },
-    { Mod1Mask|ShiftMask,           XK_Right,           spawn,      SHCMD("mpc next; kill -39 $(pidof dwm)") },
-    { Mod1Mask|ShiftMask,           XK_Left,            spawn,      SHCMD("mpc prev; kill -39 $(pidof dwm)") },
-    { Mod1Mask,                     XK_bracketleft,     spawn,      SHCMD("mpc seek -10") },
-    { Mod1Mask|ShiftMask,           XK_bracketleft,     spawn,      SHCMD("mpc seek -60") },
-    { Mod1Mask,                     XK_bracketright,    spawn,      SHCMD("mpc seek +10") },
-    { Mod1Mask|ShiftMask,           XK_bracketright,    spawn,      SHCMD("mpc seek +60") },
-    { Mod1Mask,                     XK_Left,            spawn,      SHCMD("mpc vol -5") },
-    { Mod1Mask,                     XK_Right,           spawn,      SHCMD("mpc vol +5") },
-    { Mod1Mask|ControlMask,         XK_space,           spawn,      SHCMD("mpc single") },
-    { Mod1Mask,		                XK_apostrophe,	    spawn,		SHCMD("mpc seek 0%") },
-    { Mod1Mask,		                XK_F1,	            spawn,		SHCMD("playerctl play-pause") },
-    { Mod1Mask,		                XK_F2,	            spawn,		SHCMD("playerctl next") },
-    { Mod1Mask,		                XK_F3,	            spawn,		SHCMD("playerctl previous") },
-    { Mod1Mask,		                XK_F4,	            spawn,		SHCMD("playerctl stop") },
-    { Mod1Mask,		                XK_equal,	        spawn,		SHCMD("playerctl volume 5+") },
-    { Mod1Mask,		                XK_minus,	        spawn,		SHCMD("playerctl volume 5-") },
-    { Mod1Mask|ShiftMask,		    XK_minus,	        spawn,		SHCMD("playerctl postition 10-") },
-    { Mod1Mask|ShiftMask,		    XK_equal,	        spawn,		SHCMD("playerctl position 10+") },
+    {1, {{ShiftMask, XK_Print}},                        spawn,      SHCMD("maim -s ~/Data/screenshots/$(date +%Y-%m-%d-%s).png") },
+    {1, {{0, XK_Print}},                                spawn,      SHCMD("maim ~/Data/screenshots/$(date +%Y-%m-%d-%s).png") },
+    {1, {{0, XF86XK_AudioMute}},                        spawn,      SHCMD("pamixer -t; kill -36 $(pidof dwm)") },
+    {1, {{0, XF86XK_AudioRaiseVolume}},                 spawn,      SHCMD("pactl set-sink-volume @DEFAULT_SINK@ +3%; kill -36 $(pidof dwm)") },
+    {1, {{0, XF86XK_AudioLowerVolume}},                 spawn,      SHCMD("pactl set-sink-volume @DEFAULT_SINK@ -3%; kill -36 $(pidof dwm)") },
+    {1, {{0, XF86XK_MonBrightnessUp}},                  spawn,      SHCMD("xbacklight -inc 5%; kill -38 $(pidof dwm)") },
+    {1, {{0, XF86XK_MonBrightnessDown}},                spawn,      SHCMD("xbacklight -dec 5%; kill -38 $(pidof dwm)") },
+    {1, {{0, XF86XK_AudioPrev}},                        spawn,      SHCMD("mpc prev; kill -39 $(pidof dwm)") },
+    {1, {{0, XF86XK_AudioNext}},                        spawn,      SHCMD("mpc next; kill -39 $(pidof dwm)") },
+    {1, {{0, XF86XK_AudioPlay}},                        spawn,      SHCMD("mpc toggle; kill -39 $(pidof dwm)") },
+    {1, {{0, XF86XK_HomePage}},                         spawn,      SHCMD(BROWSER) },
+    {1, {{Mod1Mask|MODKEY, XK_equal}},                  spawn,      SHCMD("xbacklight -inc 5%; kill -38 $(pidof dwm)") },
+    {1, {{Mod1Mask|MODKEY, XK_minus}},                  spawn,      SHCMD("xbacklight -dec 5%; kill -38 $(pidof dwm)") },
 
-    { Mod1Mask,		                XK_r,	            spawn,		SHCMD("radio-listen") },
-    { Mod1Mask,		                XK_Menu,	        spawn,		SHCMD("radio-listen") },
-    { MODKEY|ShiftMask,             XK_BackSpace,       spawn,      SHCMD("power") },
-    { Mod1Mask,                     XK_BackSpace,       spawn,      SHCMD("vimmouse") },
-    { MODKEY|ControlMask,           XK_w,               spawn,      SHCMD(TERMINAL " -e links") },
+    {1, {{Mod1Mask, XK_Up}},                            spawn,      SHCMD("pactl set-sink-volume @DEFAULT_SINK@ +3%; kill -36 $(pidof dwm)") },
+    {1, {{Mod1Mask, XK_Down}},                          spawn,      SHCMD("pactl set-sink-volume @DEFAULT_SINK@ -3%; kill -36 $(pidof dwm)") },
+    {1, {{Mod1Mask|ShiftMask, XK_space}},               spawn,      SHCMD("mpc toggle; kill -39 $(pidof dwm)") },
+    {1, {{Mod1Mask|ShiftMask, XK_Right}},               spawn,      SHCMD("mpc next; kill -39 $(pidof dwm)") },
+    {1, {{Mod1Mask|ShiftMask, XK_Left}},                spawn,      SHCMD("mpc prev; kill -39 $(pidof dwm)") },
+    {1, {{Mod1Mask, XK_bracketleft}},                   spawn,      SHCMD("mpc seek -10") },
+    {1, {{Mod1Mask|ShiftMask, XK_bracketleft}},         spawn,      SHCMD("mpc seek -60") },
+    {1, {{Mod1Mask, XK_bracketright}},                  spawn,      SHCMD("mpc seek +10") },
+    {1, {{Mod1Mask|ShiftMask, XK_bracketright}},        spawn,      SHCMD("mpc seek +60") },
+    {1, {{Mod1Mask, XK_Left}},                          spawn,      SHCMD("mpc vol -5") },
+    {1, {{Mod1Mask, XK_Right}},                         spawn,      SHCMD("mpc vol +5") },
+    {1, {{Mod1Mask|ControlMask, XK_space}},             spawn,      SHCMD("mpc single") },
+    {1, {{Mod1Mask, XK_apostrophe}},	                spawn,		SHCMD("mpc seek 0%") },
+    {1, {{Mod1Mask, XK_F1}},	                        spawn,		SHCMD("playerctl play-pause") },
+    {1, {{Mod1Mask, XK_F2}},	                        spawn,		SHCMD("playerctl next") },
+    {1, {{Mod1Mask, XK_F3}},	                        spawn,		SHCMD("playerctl previous") },
+    {1, {{Mod1Mask, XK_F4}},	                        spawn,		SHCMD("playerctl stop") },
+    {1, {{Mod1Mask, XK_equal}},	                        spawn,		SHCMD("playerctl volume 5+") },
+    {1, {{Mod1Mask, XK_minus}},	                        spawn,		SHCMD("playerctl volume 5-") },
+    {1, {{Mod1Mask|ShiftMask, XK_minus}},	            spawn,		SHCMD("playerctl postition 10-") },
+    {1, {{Mod1Mask|ShiftMask, XK_equal}},	            spawn,		SHCMD("playerctl position 10+") },
 
-//    { MODKEY,                       XK_n,               spawn,      SHCMD(TERMINAL " -e newsboat") },
-    { Mod1Mask|ShiftMask,           XK_w,               spawn,      SHCMD("sxiv -q -o -t -r ~/Data/Media/wallpapers") },
-    { MODKEY|ShiftMask,             XK_g,               spawn,      SHCMD("gimp") },
-    { MODKEY,                       XK_grave,           spawn,      SHCMD("alacritty") },
-    { MODKEY|ShiftMask,             XK_grave,           spawn,      SHCMD("libreoffice") },
-    { MODKEY|ShiftMask,             XK_x,               spawn,      SHCMD("pcmanfm") },
-    { MODKEY|ShiftMask,             XK_e,               spawn,      SHCMD(TERMINAL " -e htop") },
-   // { MODKEY|ShiftMask,             XK_n,               spawn,      SHCMD(TERMINAL " -e newsboat") },
-    { MODKEY,                       XK_w,               spawn,      SHCMD(BROWSER) },
-    { MODKEY|ShiftMask,             XK_v,               spawn,      SHCMD("minitube") },
+    {1, {{Mod1Mask,	XK_r}},	                            spawn,		SHCMD("radio-listen") },
+    {1, {{Mod1Mask, XK_Menu}},	                        spawn,		SHCMD("radio-listen") },
+    {1, {{MODKEY|ShiftMask, XK_BackSpace}},             spawn,      SHCMD("power") },
+    {1, {{MODKEY|ShiftMask, XK_c}},                     spawn,      SHCMD("confedit") },
+    {1, {{Mod1Mask, XK_BackSpace}},                     spawn,      SHCMD("vimmouse") },
+    {1, {{MODKEY|ControlMask, XK_w}},                   spawn,      SHCMD(TERMINAL " -e links") },
 
-    { MODKEY,                       XK_n,               spawn,      SHCMD(TERMINAL " -e neomutt") },
-    { MODKEY,                       XK_v,               spawn,      SHCMD("qbittorrent") },
-    { MODKEY|ShiftMask,             XK_n,               spawn,      SHCMD(TERMINAL " -e nvim $HOME/.cache/ScratchNote.md") },
-    { MODKEY|ControlMask,           XK_z,               spawn,      SHCMD("slock") },
-    { MODKEY,                       XK_c,               spawn,      SHCMD("galculator") },
-    { MODKEY|ControlMask,           XK_r,               spawn,      SHCMD("mpv --untimed --no-cache --no-osc --no-input-default-bindings --profile=low-latency --input-conf=/dev/null --title=webcam /dev/video0") },
+//    {1, MODKEY, XK_n}},                               spawn,      SHCMD(TERMINAL " -e newsboat") },
+    {1, {{Mod1Mask|ShiftMask, XK_w}},                   spawn,      SHCMD("sxiv -q -o -t -r ~/Data/Media/wallpapers") },
+    {1, {{MODKEY|ShiftMask, XK_g}},                     spawn,      SHCMD("gimp") },
+    {1, {{MODKEY, XK_grave}},                           spawn,      SHCMD("st") },
+    {1, {{MODKEY|ShiftMask, XK_grave}},                 spawn,      SHCMD("libreoffice") },
+    {1, {{MODKEY|ShiftMask, XK_x}},                     spawn,      SHCMD("pcmanfm") },
+    {1, {{MODKEY|ShiftMask, XK_e}},                     spawn,      SHCMD(TERMINAL " -e htop") },
+   // {1, {{MODKEY|ShiftMask, XK_n}},                   spawn,      SHCMD(TERMINAL " -e newsboat") },
+    {1, {{MODKEY, XK_w}},                               spawn,      SHCMD(BROWSER) },
+    {1, {{MODKEY|ShiftMask, XK_v}},                     spawn,      SHCMD("minitube") },
 
-    { Mod1Mask,                     XK_w,               spawn,      SHCMD(TERMINAL " -e nmtui") },
-    { MODKEY,                       XK_e,               spawn,      SHCMD("emacsclient -c || emacs") },
-    { MODKEY,                       XK_d,               spawn,      SHCMD("clipgrab") },
-    { MODKEY|ShiftMask,             XK_d,               spawn,      SHCMD("rofi -show drun") },
-    { MODKEY,                       XK_a,               spawn,      SHCMD(TERMINAL " -e ranger") },
-    { MODKEY,                       XK_Menu,            spawn,      SHCMD("rofi -show emoji") },
-    { MODKEY,                       XK_slash,           spawn,      SHCMD("web-search") },
-    { MODKEY,                       XK_semicolon,       spawn,      SHCMD("spellchk") },
-    { MODKEY|ShiftMask,             XK_slash,           spawn,      SHCMD("browser-launch") },
-    { MODKEY|ShiftMask,             XK_w,               spawn,      SHCMD("open-bookmarks") },
-    { MODKEY,                       XK_apostrophe,      spawn,      SHCMD("notify-timedate") },
-    { MODKEY|ShiftMask,             XK_apostrophe,      spawn,      SHCMD("notify-battery") },
-    { MODKEY|ControlMask,           XK_apostrophe,      spawn,      SHCMD("notify-wifi") },
+    {1, {{MODKEY, XK_n}},                               spawn,      SHCMD(TERMINAL " -e neomutt") },
+    {1, {{MODKEY, XK_v}},                               spawn,      SHCMD("qbittorrent") },
+    {1, {{MODKEY|ShiftMask, XK_n}},                     spawn,      SHCMD(TERMINAL " -e nvim $HOME/.cache/ScratchNote.md") },
+    {1, {{MODKEY|ControlMask, XK_z}},                   spawn,      SHCMD("slock") },
+    {1, {{MODKEY, XK_c}},                               spawn,      SHCMD("galculator") },
+    {1, {{MODKEY|ControlMask, XK_r}},                   spawn,      SHCMD("mpv --untimed --no-cache --no-osc --no-input-default-bindings --profile=low-latency --input-conf=/dev/null --title=webcam /dev/video0") },
+
+    {1, {{Mod1Mask, XK_w}},                             spawn,      SHCMD(TERMINAL " -e nmtui") },
+    {1, {{MODKEY, XK_e}},                               spawn,      SHCMD("emacsclient -c || emacs") },
+    {1, {{MODKEY, XK_d}},                               spawn,      SHCMD("clipgrab") },
+    {1, {{MODKEY|ShiftMask, XK_d}},                     spawn,      SHCMD("rofi -show drun -show-icons") },
+    {1, {{MODKEY, XK_a}},                               spawn,      SHCMD(TERMINAL " -e ranger") },
+    {1, {{MODKEY, XK_Menu}},                            spawn,      SHCMD("rofi -show emoji") },
+    {1, {{MODKEY, XK_slash}},                           spawn,      SHCMD("web-search") },
+    {1, {{MODKEY, XK_semicolon}},                       spawn,      SHCMD("spellchk") },
+    {1, {{MODKEY|ShiftMask, XK_slash}},                 spawn,      SHCMD("browser-launch") },
+    {1, {{MODKEY|ShiftMask, XK_w}},                     spawn,      SHCMD("open-bookmarks") },
+    {1, {{MODKEY, XK_apostrophe}},                      spawn,      SHCMD("notify-timedate") },
+    {1, {{MODKEY|ShiftMask, XK_apostrophe}},            spawn,      SHCMD("notify-battery") },
+    {1, {{MODKEY|ControlMask, XK_apostrophe}},          spawn,      SHCMD("notify-wifi") },
 };
 
 /* button definitions */
@@ -355,7 +362,5 @@ static const Button buttons[] = {
 	{ ClkTagBar,            0,              Button3,        toggleview,     {0} },
 	{ ClkTagBar,            MODKEY,         Button1,        tag,            {0} },
 	{ ClkTagBar,            MODKEY,         Button3,        toggletag,      {0} },
-	{ ClkFollowSymbol,      0,              Button1,        togglefollow,   {0} },
 	{ ClkTabBar,            0,              Button1,        focuswin,       {0} },
 };
-
