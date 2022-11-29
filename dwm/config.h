@@ -2,6 +2,8 @@
 
 #define SESSION_FILE "/tmp/dwm-session"
 
+#define ICONSIZE 16   /* icon size */
+#define ICONSPACING 5 /* space between icon and title */
 /* appearance */
 /*  Display modes of the tab bar: never shown, always shown, shown only in  */
 /*  monocle mode in the presence of several windows.                        */
@@ -61,14 +63,6 @@ static Sp scratchpads[] = {
 	{"spterm",      spcmd1},
 	{"spfm",    spcmd2},
 	{"spmpc",   spcmd3},
-};
-
-/* launcher commands (They must be NULL terminated) */
-static const char* launcher[]      = { "rofi", "-show", "drun", "-show-icons", NULL };
-
-static const Launcher launchers[] = {
-       /* command       name to display */
-	{ launcher,         "🪟" },
 };
 
 /* status bar */
