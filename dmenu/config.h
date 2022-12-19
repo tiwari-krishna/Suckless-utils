@@ -6,13 +6,13 @@ static int centered = 1;                    /* -c option; centers dmenu on scree
 static int min_width = 1000;                    /* minimum width when centered */
 /* -fn option overrides fonts[0]; default X11 font or font set */
 static const char *fonts[] = {
-	"Noto Sans Mono:size=10"
+	"Noto Sans:weight=semibold:pixelsize=15:antialias=true:autohint=true"
 };
 static const char *prompt      = NULL;      /* -p  option; prompt to the left of input field */
 static const char *colors[SchemeLast][2] = {
 	/*     fg         bg       */
 	[SchemeNorm] = { "#ebdbb2", "#282828" },
-	[SchemeSel] = { "#ebdbb2", "#7a0099" },
+	[SchemeSel] = { "#ebdbb2", "#4a04cc" },
 	[SchemeSelHighlight] = { "#ffc978", "#005577" },
 	[SchemeNormHighlight] = { "#ffc978", "#222222" },
 	[SchemeOut] = { "#ebdbb2", "#8ec07c" },

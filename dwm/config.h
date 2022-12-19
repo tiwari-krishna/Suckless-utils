@@ -1,19 +1,14 @@
-/* See LICENSE file for copyright and license details. */
-
 #define SESSION_FILE "/tmp/dwm-session"
 
 #define ICONSIZE 16   /* icon size */
 #define ICONSPACING 5 /* space between icon and title */
 /* appearance */
-/*  Display modes of the tab bar: never shown, always shown, shown only in  */
-/*  monocle mode in the presence of several windows.                        */
-/*  Modes after showtab_nmodes are disabled.                                */
 enum showtab_modes { showtab_never, showtab_auto, showtab_nmodes, showtab_always};
 static const int showtab			= showtab_auto;        /* Default tab bar show mode */
 static const int toptab				= True;               /* False means bottom tab bar */
 
 static const double activeopacity   = 1.0f;     /* Window opacity when it's focused (0 <= opacity <= 1) */
-static const double inactiveopacity = 0.95f;   /* Window opacity when it's inactive (0 <= opacity <= 1) */
+static const double inactiveopacity = 0.85f;   /* Window opacity when it's inactive (0 <= opacity <= 1) */
 static       Bool bUseOpacity       = True;     /* Starts with opacity on any unfocused windows */
 static const unsigned int systraypinning = 0;   /* 0: sloppy systray follows selected monitor, >0: pin systray to monitor X */
 static const unsigned int systrayonleft = 0;   	/* 0: systray in the right corner, >0: systray on left of status text */
@@ -32,23 +27,23 @@ static const unsigned int gappov    = 10;       /* vert outer gap between window
 static       int smartgaps          = 0;        /* 1 means no outer gap when there is only one window */
 static const int showbar            = 1;        /* 0 means no bar */
 static const int topbar             = 1;        /* 0 means bottom bar */
-static const char *fonts[]          = { "Noto Sans:weight=bold:size=11", "Noto Color Emoji:size=12" };
-static const char dmenufont[]       = "Fira Sans:size=11";
-static const char col_gray1[]       = "#222222";
-static const char col_gray2[]       = "#444444";
-static const char col_gray3[]       = "#eeeeee";
-static const char col_gray4[]       = "#eeeeee";
-static const char col_cyan[]        = "#4a04cc";
-static const char act_bor[]         = "#e6ede8";
-static const char inact_bor[]       = "#041c0b";
+static const char *fonts[]          = { "Fira Sans:weight=semibold:pixelsize=15:antialias=true:autohint=true","Noto Sans Devanagari:weight=semibold:pixelsize=15:antialias=true:autohint=true","Hack Nerd Font:weight=bold:size=14" };
+static const char bg_Bar[]          = "#000000";
+static const char fg_Bar[]          = "#eeeeee";
+static const char act_Tag[]         = "#4a04cc";
 static const char title_fg[]        = "#5cddf7";
-static const char title_bg[]        = "#1a1a21";
-static const char *colors[][3]      = {
-	/*               fg         bg         border   */
-	[SchemeNorm] = { col_gray3, col_gray1, inact_bor },
-	[SchemeSel]  = { col_gray4, col_cyan,  act_bor  },
-	[SchemeStatus]={ col_cyan, col_gray1,  NULL  },
-    [SchemeTitle]  = { title_fg, title_bg,  act_bor },
+static const char float_bor[]       = "#ffffff";
+static const char *colors[][4]      = {
+	/*               fg         bg         border       float*/
+	[SchemeNorm] = { fg_Bar, bg_Bar, bg_Bar,   float_bor },
+	[SchemeSel]  = { fg_Bar, act_Tag,  act_Tag,     float_bor  },
+	[SchemeStatus]={ act_Tag, bg_Bar,  NULL,        NULL  },
+    [SchemeTitle]  = { title_fg, bg_Bar,  act_Tag,    float_bor },
+};
+
+static const char *const autostart[] = {
+	"dunst", NULL,
+	NULL /* terminate */
 };
 
 typedef struct {
@@ -58,11 +53,13 @@ typedef struct {
 const char *spcmd1[] = {"alacritty", "--class", "spterm", NULL };
 const char *spcmd2[] = {"alacritty", "--class", "spfm", "-e", "ranger", NULL };
 const char *spcmd3[] = {"alacritty", "--class", "spmpc", "-e", "ncmpcpp", NULL };
+const char *spcmd4[] = {"galculator", NULL };
 static Sp scratchpads[] = {
 	/* name          cmd  */
 	{"spterm",      spcmd1},
 	{"spfm",    spcmd2},
-	{"spmpc",   spcmd3},
+	{"spmpc",    spcmd3},
+	{"galculator",   spcmd4},
 };
 
 /* status bar */
@@ -80,7 +77,7 @@ static const Block blocks[] = {
 /* inverse the order of the blocks, comment to disable */
 #define INVERSED	1
 /* delimeter between blocks commands. NULL character ('\0') means no delimeter. */
-static char delimiter[] = "  ";
+static char delimiter[] = "   ";
 /* max number of character that one block command can output */
 #define CMDLENGTH	50
 
@@ -96,13 +93,13 @@ static const Rule rules[] = {
 	/* class     instance  title           tags mask  isfloating  isterminal  noswallow  monitor  notallowed  isfreesize */
 	{ "Gimp",    NULL,     NULL,           0,         1,          0,           0,        -1,        0,          1 },
 	{ "Firefox", NULL,     NULL,           0,         0,          0,           0,        -1,        0,          0 },
-	{ "qBittorrent", NULL,   NULL,     1 << 8,        0,          0,           0,        -1,        0,          1 },
 	{ "st",      NULL,     NULL,           0,         0,          1,           0,        -1,        0,          0 },
 	{ "Alacritty",  NULL,   NULL,          0,         0,          1,           0,        -1,        0,          0 },
 	{ NULL,      NULL,     "Event Tester", 0,         0,          0,           1,        -1,        0,          0 }, /* xev */
     { NULL,		 "spterm",		NULL,		SPTAG(0),		1,	1,              0,		 -1,        0,          0 },
 	{ NULL,		 "spfm",		NULL,		SPTAG(1),		1,	1,              0,		 -1,        0,          0 },
 	{ NULL,		 "spmpc",	    NULL,	    SPTAG(2),		1,	1,              0,		 -1,        0,          0 },
+	{ NULL,		 "galculator",	NULL,	    SPTAG(3),		1,	1,              0,		 -1,        0,          0 },
 };
 
 /* layout(s) */
@@ -118,11 +115,11 @@ static const int mainmon = 0; /* xsetroot will only change the bar on this monit
 
 static const Layout layouts[] = {
 	/* symbol     arrange function */
-	{ "[]=",      tile },    /* first entry is default */
-    { "TTT",      bstack },
+	{ "M&S",      tile },    /* first entry is default */
+    { "Mir M&S",      bstack },
 
-	{ "[M]",      monocle },
-	{ "><>",      NULL },    /* no layout function means floating behavior */
+	{ "Tabbed",      monocle },
+	{ "Float",      NULL },    /* no layout function means floating behavior */
 };
 
 /* key definitions */
@@ -141,7 +138,7 @@ static const Layout layouts[] = {
 #include <X11/XF86keysym.h>
 
 /* commands */
-static const char *dmenucmd[] = { "dmenu_run", "-fn", dmenufont, "-nb", col_gray1, "-nf", col_gray3, "-sb", col_cyan, "-sf", col_gray4, NULL };
+static const char *dmenucmd[] = { "dmenu_run", NULL };
 static const char *termcmd[]  = { "alacritty", NULL };
 
 static const Keychord keychords[] = {
@@ -177,8 +174,8 @@ static const Keychord keychords[] = {
     {1, {{MODKEY, XK_t}},                       setlayout,      {.v = &layouts[0]} },//tile
     {1, {{MODKEY|ShiftMask, XK_t}},             setlayout,      {.v = &layouts[1]} },//bottom tile
     {1, {{MODKEY|ControlMask, XK_t}},           setlayout,      {.v = &layouts[2]} },//monocle
-    {1, {{MODKEY, XK_y}},                       setlayout,      {.v = &layouts[3]} },//floating
-	{1, {{MODKEY|ShiftMask, XK_y}},             tabmode,        {-1} },
+    {1, {{MODKEY|ShiftMask, XK_y}},             setlayout,      {.v = &layouts[3]} },//floating
+	{1, {{MODKEY, XK_y}},                       tabmode,        {-1} },
 	{1, {{MODKEY, XK_f}},                       togglefloating, {0} },
     {1, {{MODKEY|ShiftMask, XK_Tab}},           layoutscroll,   {.i = -1 } },
 	{1, {{MODKEY, XK_Tab}},                     layoutscroll,   {.i = +1 } },
@@ -195,6 +192,7 @@ static const Keychord keychords[] = {
 	{1, {{MODKEY|ShiftMask, XK_Return}}, 	    togglescratch,  {.ui = 0 } },
 	{1, {{Mod1Mask|ShiftMask, XK_Return}},	    togglescratch,  {.ui = 1 } },
 	{1, {{MODKEY|Mod1Mask, XK_Return}},	        togglescratch,  {.ui = 2 } },
+	{1, {{MODKEY, XK_c}},	                    togglescratch,  {.ui = 3 } },
 
 	TAGKEYS(                        XK_1,                      0)
 	TAGKEYS(                        XK_2,                      1)
@@ -214,12 +212,12 @@ static const Keychord keychords[] = {
 	{1, {{MODKEY,  XK_Prior}},                  scratchpad_hide, {0} },
 	{1, {{MODKEY,  XK_End}},                    scratchpad_remove,{0} },
 
-    {1, {{MODKEY, XK_equal}},                   incrgaps,       {.i = +1 } },
-    {1, {{MODKEY, XK_minus}},                   incrgaps,       {.i = -1 } },
-    {1, {{MODKEY|ShiftMask, XK_equal}},         togglegaps,     {0} },
-    {1, {{MODKEY|ShiftMask, XK_minus}},         defaultgaps,    {0} },
-	{1, {{MODKEY|ControlMask, XK_i}},           incrigaps,      {.i = +1 } },
-	{1, {{MODKEY|ControlMask|ShiftMask, XK_i}}, incrigaps,      {.i = -1 } },
+    {1, {{MODKEY, XK_p}},                       incrgaps,       {.i = +1 } },
+    {1, {{MODKEY, XK_o}},                       incrgaps,       {.i = -1 } },
+    {1, {{MODKEY|ShiftMask, XK_p}},             togglegaps,     {0} },
+    {1, {{MODKEY|ShiftMask, XK_o}},             defaultgaps,    {0} },
+	{1, {{MODKEY|ControlMask, XK_p}},           incrigaps,      {.i = +1 } },
+	{1, {{MODKEY|ControlMask|ShiftMask, XK_p}}, incrigaps,      {.i = -1 } },
 	{1, {{MODKEY|ControlMask, XK_o}},           incrogaps,      {.i = +1 } },
 	{1, {{MODKEY|ControlMask|ShiftMask, XK_o}}, incrogaps,      {.i = -1 } },
 
@@ -242,10 +240,6 @@ static const Keychord keychords[] = {
 	{1, {{MODKEY|ControlMask|ShiftMask, XK_Left}},  moveresizeedge, {.v = "L"} },
 	{1, {{MODKEY|ControlMask|ShiftMask, XK_Right}}, moveresizeedge, {.v = "R"} },
 
-    {1, {{MODKEY|ControlMask, XK_u}},           show,           {0} },
-	{1, {{MODKEY|ShiftMask, XK_u}},             showall,        {0} },
-	{1, {{MODKEY, XK_u}},                       hide,           {0} },
-
     {1, {{MODKEY|ShiftMask, XK_bracketleft}},   shiftboth,      { .i = -1 }	},
     {1, {{MODKEY|ShiftMask, XK_bracketright}},  shiftboth,      { .i = +1 }	},
     {1, {{MODKEY, XK_bracketleft}},             shiftview,      { .i = -1 }	},
@@ -254,9 +248,8 @@ static const Keychord keychords[] = {
     {1, {{MODKEY|ControlMask, XK_bracketright}}, shifttag,      { .i = +1 }	},
 
     {1, {{Mod1Mask|ControlMask, XK_v}},                 spawn,      SHCMD(TERMINAL " -e pulsemixer") },
-    {1, {{Mod1Mask|ShiftMask, XK_s}},                   spawn,      SHCMD("maim -s ~/Data/screenshots/$(date +%Y-%m-%d-%s).png") },
-    {1, {{Mod1Mask, XK_c}},                             spawn,      SHCMD("maim -s ~/Data/screenshots/$(date +%Y-%m-%d-%s).png") },
-    {1, {{Mod1Mask, XK_s}},                             spawn,      SHCMD("maim ~/Data/screenshots/$(date +%Y-%m-%d-%s).png") },
+    {1, {{Mod1Mask|ShiftMask, XK_Menu}},                spawn,      SHCMD("maim -s ~/Data/screenshots/$(date +%Y-%m-%d-%s).png") },
+    {1, {{Mod1Mask, XK_Menu}},                          spawn,      SHCMD("maim ~/Data/screenshots/$(date +%Y-%m-%d-%s).png") },
 
     {1, {{ShiftMask, XK_Print}},                        spawn,      SHCMD("maim -s ~/Data/screenshots/$(date +%Y-%m-%d-%s).png") },
     {1, {{0, XK_Print}},                                spawn,      SHCMD("maim ~/Data/screenshots/$(date +%Y-%m-%d-%s).png") },
@@ -295,39 +288,36 @@ static const Keychord keychords[] = {
     {1, {{Mod1Mask|ShiftMask, XK_equal}},	            spawn,		SHCMD("playerctl position 10+") },
 
     {1, {{Mod1Mask,	XK_r}},	                            spawn,		SHCMD("radio-listen") },
-    {1, {{Mod1Mask, XK_Menu}},	                        spawn,		SHCMD("radio-listen") },
     {1, {{MODKEY|ShiftMask, XK_BackSpace}},             spawn,      SHCMD("power") },
     {1, {{MODKEY|ShiftMask, XK_c}},                     spawn,      SHCMD("confedit") },
     {1, {{Mod1Mask, XK_BackSpace}},                     spawn,      SHCMD("vimmouse") },
-    {1, {{MODKEY|ControlMask, XK_w}},                   spawn,      SHCMD(TERMINAL " -e links") },
+    {1, {{MODKEY|ControlMask, XK_w}},                   spawn,      SHCMD("web-search") },
 
-//    {1, MODKEY, XK_n}},                               spawn,      SHCMD(TERMINAL " -e newsboat") },
+    //{1, MODKEY, XK_n}},                               spawn,      SHCMD(TERMINAL " -e newsboat") },
     {1, {{Mod1Mask|ShiftMask, XK_w}},                   spawn,      SHCMD("sxiv -q -o -t -r ~/Data/Media/wallpapers") },
     {1, {{MODKEY|ShiftMask, XK_g}},                     spawn,      SHCMD("gimp") },
     {1, {{MODKEY, XK_grave}},                           spawn,      SHCMD("st") },
     {1, {{MODKEY|ShiftMask, XK_grave}},                 spawn,      SHCMD("libreoffice") },
-    {1, {{MODKEY|ShiftMask, XK_x}},                     spawn,      SHCMD("pcmanfm") },
+    {1, {{MODKEY|ShiftMask, XK_d}},                     spawn,      SHCMD("pcmanfm") },
     {1, {{MODKEY|ShiftMask, XK_e}},                     spawn,      SHCMD(TERMINAL " -e htop") },
    // {1, {{MODKEY|ShiftMask, XK_n}},                   spawn,      SHCMD(TERMINAL " -e newsboat") },
     {1, {{MODKEY, XK_w}},                               spawn,      SHCMD(BROWSER) },
     {1, {{MODKEY|ShiftMask, XK_v}},                     spawn,      SHCMD("minitube") },
 
-    {1, {{MODKEY, XK_n}},                               spawn,      SHCMD(TERMINAL " -e neomutt") },
+    //{1, {{MODKEY, XK_n}},                               spawn,      SHCMD(TERMINAL " -e neomutt") },
     {1, {{MODKEY, XK_v}},                               spawn,      SHCMD("qbittorrent") },
     {1, {{MODKEY|ShiftMask, XK_n}},                     spawn,      SHCMD(TERMINAL " -e nvim $HOME/.cache/ScratchNote.md") },
-    {1, {{MODKEY|ControlMask, XK_z}},                   spawn,      SHCMD("slock") },
-    {1, {{MODKEY, XK_c}},                               spawn,      SHCMD("galculator") },
+    {1, {{MODKEY, XK_x}},                               spawn,      SHCMD("slock") },
+    //{1, {{MODKEY, XK_c}},                               spawn,      SHCMD("galculator") },
     {1, {{MODKEY|ControlMask, XK_r}},                   spawn,      SHCMD("mpv --untimed --no-cache --no-osc --no-input-default-bindings --profile=low-latency --input-conf=/dev/null --title=webcam /dev/video0") },
 
     {1, {{Mod1Mask, XK_w}},                             spawn,      SHCMD(TERMINAL " -e nmtui") },
-    {1, {{MODKEY, XK_e}},                               spawn,      SHCMD("emacsclient -c || emacs") },
+    {1, {{MODKEY|ShiftMask, XK_b}},                     spawn,      SHCMD("browser-launch") },
     {1, {{MODKEY, XK_d}},                               spawn,      SHCMD("clipgrab") },
-    {1, {{MODKEY|ShiftMask, XK_d}},                     spawn,      SHCMD("rofi -show drun -show-icons") },
+    {1, {{MODKEY|ShiftMask, XK_a}},                     spawn,      SHCMD("rofi -show drun -show-icons") },
     {1, {{MODKEY, XK_a}},                               spawn,      SHCMD(TERMINAL " -e ranger") },
     {1, {{MODKEY, XK_Menu}},                            spawn,      SHCMD("rofi -show emoji") },
-    {1, {{MODKEY, XK_slash}},                           spawn,      SHCMD("web-search") },
     {1, {{MODKEY, XK_semicolon}},                       spawn,      SHCMD("spellchk") },
-    {1, {{MODKEY|ShiftMask, XK_slash}},                 spawn,      SHCMD("browser-launch") },
     {1, {{MODKEY|ShiftMask, XK_w}},                     spawn,      SHCMD("open-bookmarks") },
     {1, {{MODKEY, XK_apostrophe}},                      spawn,      SHCMD("notify-timedate") },
     {1, {{MODKEY|ShiftMask, XK_apostrophe}},            spawn,      SHCMD("notify-battery") },
