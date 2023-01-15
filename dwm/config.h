@@ -1,14 +1,12 @@
 #define SESSION_FILE "/tmp/dwm-session"
 
-#define ICONSIZE 16   /* icon size */
-#define ICONSPACING 5 /* space between icon and title */
 /* appearance */
 enum showtab_modes { showtab_never, showtab_auto, showtab_nmodes, showtab_always};
 static const int showtab			= showtab_auto;        /* Default tab bar show mode */
 static const int toptab				= True;               /* False means bottom tab bar */
 
 static const double activeopacity   = 1.0f;     /* Window opacity when it's focused (0 <= opacity <= 1) */
-static const double inactiveopacity = 0.85f;   /* Window opacity when it's inactive (0 <= opacity <= 1) */
+static const double inactiveopacity = 0.95f;   /* Window opacity when it's inactive (0 <= opacity <= 1) */
 static       Bool bUseOpacity       = True;     /* Starts with opacity on any unfocused windows */
 static const unsigned int systraypinning = 0;   /* 0: sloppy systray follows selected monitor, >0: pin systray to monitor X */
 static const unsigned int systrayonleft = 0;   	/* 0: systray in the right corner, >0: systray on left of status text */
@@ -23,14 +21,14 @@ static const unsigned int snap      = 32;       /* snap pixel */
 static const unsigned int gappih    = 5;       /* horiz inner gap between windows */
 static const unsigned int gappiv    = 5;       /* vert inner gap between windows */
 static const unsigned int gappoh    = 10;       /* horiz outer gap between windows and screen edge */
-static const unsigned int gappov    = 10;       /* vert outer gap between windows and screen edge */
+static const unsigned int gappov    = 15;       /* vert outer gap between windows and screen edge */
 static       int smartgaps          = 0;        /* 1 means no outer gap when there is only one window */
 static const int showbar            = 1;        /* 0 means no bar */
 static const int topbar             = 1;        /* 0 means bottom bar */
-static const char *fonts[]          = { "Fira Sans:weight=semibold:pixelsize=15:antialias=true:autohint=true","Noto Sans Devanagari:weight=semibold:pixelsize=15:antialias=true:autohint=true","Hack Nerd Font:weight=bold:size=14" };
+static const char *fonts[]          = { "Fira Code:weight=semibold:size=11","Noto Sans Devanagari:weight=semibold:size=12","Hack Nerd Font:size=14" };
 static const char bg_Bar[]          = "#000000";
 static const char fg_Bar[]          = "#eeeeee";
-static const char act_Tag[]         = "#4a04cc";
+static const char act_Tag[]         = "#421975";
 static const char title_fg[]        = "#5cddf7";
 static const char float_bor[]       = "#ffffff";
 static const char *colors[][4]      = {
@@ -38,7 +36,6 @@ static const char *colors[][4]      = {
 	[SchemeNorm] = { fg_Bar, bg_Bar, bg_Bar,   float_bor },
 	[SchemeSel]  = { fg_Bar, act_Tag,  act_Tag,     float_bor  },
 	[SchemeStatus]={ act_Tag, bg_Bar,  NULL,        NULL  },
-    [SchemeTitle]  = { title_fg, bg_Bar,  act_Tag,    float_bor },
 };
 
 static const char *const autostart[] = {
@@ -77,7 +74,7 @@ static const Block blocks[] = {
 /* inverse the order of the blocks, comment to disable */
 #define INVERSED	1
 /* delimeter between blocks commands. NULL character ('\0') means no delimeter. */
-static char delimiter[] = "   ";
+static char delimiter[] = " ";
 /* max number of character that one block command can output */
 #define CMDLENGTH	50
 
@@ -96,10 +93,10 @@ static const Rule rules[] = {
 	{ "st",      NULL,     NULL,           0,         0,          1,           0,        -1,        0,          0 },
 	{ "Alacritty",  NULL,   NULL,          0,         0,          1,           0,        -1,        0,          0 },
 	{ NULL,      NULL,     "Event Tester", 0,         0,          0,           1,        -1,        0,          0 }, /* xev */
-    { NULL,		 "spterm",		NULL,		SPTAG(0),		1,	1,              0,		 -1,        0,          0 },
-	{ NULL,		 "spfm",		NULL,		SPTAG(1),		1,	1,              0,		 -1,        0,          0 },
-	{ NULL,		 "spmpc",	    NULL,	    SPTAG(2),		1,	1,              0,		 -1,        0,          0 },
-	{ NULL,		 "galculator",	NULL,	    SPTAG(3),		1,	1,              0,		 -1,        0,          0 },
+	{ NULL,	     "spterm",  NULL,	       SPTAG(0),  1,	      1,           0,	     -1,        0,          0 },
+	{ NULL,	     "spfm",	NULL,	       SPTAG(1),  1,	      1,           0,	     -1,        0,          0 },
+	{ NULL,	     "spmpc",	NULL,	       SPTAG(2),  1,	      1,           0,	     -1,        0,          0 },
+	{ NULL,	     "galculator",  NULL,      SPTAG(3),  1,	      1,           0,	     -1,        0,          0 },
 };
 
 /* layout(s) */
