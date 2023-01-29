@@ -25,7 +25,7 @@ static const unsigned int gappov    = 15;       /* vert outer gap between window
 static       int smartgaps          = 0;        /* 1 means no outer gap when there is only one window */
 static const int showbar            = 1;        /* 0 means no bar */
 static const int topbar             = 1;        /* 0 means bottom bar */
-static const char *fonts[]          = { "Fira Code:weight=semibold:size=11","Noto Sans Devanagari:weight=semibold:size=12","Hack Nerd Font:size=14" };
+static const char *fonts[]          = { "DejaVu Sans:antialias=true:autohint=true:weight=Bold:pixelsize=13", "Noto Color Emoji:size=12", "Noto Sans Devanagari:weight=semibold:size=12" };
 static const char bg_Bar[]          = "#000000";
 static const char fg_Bar[]          = "#eeeeee";
 static const char act_Tag[]         = "#421975";
@@ -62,7 +62,7 @@ static Sp scratchpads[] = {
 /* status bar */
 static const Block blocks[] = {
 	/* fg     command				interval	signal */
-	{ "#FF3080", "stat-timedate",		60,		1},
+	{ "#3BFF30", "stat-timedate",		60,		1},
 	{ "#3BFF30", "stat-volume",			0,	    2},
 	{ "#3098FF", "stat-battery",		5,		3},
 	{ "#FF9B30", "stat-backlight",		0,		4},
@@ -74,7 +74,7 @@ static const Block blocks[] = {
 /* inverse the order of the blocks, comment to disable */
 #define INVERSED	1
 /* delimeter between blocks commands. NULL character ('\0') means no delimeter. */
-static char delimiter[] = " ";
+static char delimiter[] = "   ";
 /* max number of character that one block command can output */
 #define CMDLENGTH	50
 
@@ -305,12 +305,17 @@ static const Keychord keychords[] = {
     {1, {{MODKEY, XK_v}},                               spawn,      SHCMD("qbittorrent") },
     {1, {{MODKEY|ShiftMask, XK_n}},                     spawn,      SHCMD(TERMINAL " -e nvim $HOME/.cache/ScratchNote.md") },
     {1, {{MODKEY, XK_x}},                               spawn,      SHCMD("slock") },
+		{1, {{MODKEY, XK_slash}},                           spawn,      SHCMD("mount-drives") },
+    {1, {{MODKEY|ControlMask, XK_slash}},               spawn,      SHCMD("mount-and") },
+    {1, {{MODKEY|ShiftMask, XK_slash}},                 spawn,      SHCMD("umount-drives") },
     //{1, {{MODKEY, XK_c}},                               spawn,      SHCMD("galculator") },
     {1, {{MODKEY|ControlMask, XK_r}},                   spawn,      SHCMD("mpv --untimed --no-cache --no-osc --no-input-default-bindings --profile=low-latency --input-conf=/dev/null --title=webcam /dev/video0") },
 
     {1, {{Mod1Mask, XK_w}},                             spawn,      SHCMD(TERMINAL " -e nmtui") },
     {1, {{MODKEY|ShiftMask, XK_b}},                     spawn,      SHCMD("browser-launch") },
+    {1, {{MODKEY|ShiftMask, XK_m}},                     spawn,      SHCMD("mpv $(xclip -o -rmlastnl -selection clipboard)") },
     {1, {{MODKEY, XK_d}},                               spawn,      SHCMD("clipgrab") },
+    {1, {{MODKEY, XK_z}},                               spawn,      SHCMD("clipmenu") },
     {1, {{MODKEY|ShiftMask, XK_a}},                     spawn,      SHCMD("rofi -show drun -show-icons") },
     {1, {{MODKEY, XK_a}},                               spawn,      SHCMD(TERMINAL " -e ranger") },
     {1, {{MODKEY, XK_Menu}},                            spawn,      SHCMD("rofi -show emoji") },
