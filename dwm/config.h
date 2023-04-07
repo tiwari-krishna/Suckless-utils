@@ -25,7 +25,7 @@ static const unsigned int gappov    = 15;       /* vert outer gap between window
 static       int smartgaps          = 0;        /* 1 means no outer gap when there is only one window */
 static const int showbar            = 1;        /* 0 means no bar */
 static const int topbar             = 1;        /* 0 means bottom bar */
-static const char *fonts[]          = { "DejaVu Sans:antialias=true:autohint=true:weight=Bold:pixelsize=13", "Noto Color Emoji:size=12", "Noto Sans Devanagari:weight=semibold:size=12" };
+static const char *fonts[]          = { "sans:antialias=true:autohint=true:weight=SemiBold:pixelsize=15", "Noto Color Emoji:size=12", "Noto Sans Devanagari:weight=semibold:size=12" };
 static const char bg_Bar[]          = "#000000";
 static const char fg_Bar[]          = "#eeeeee";
 static const char act_Tag[]         = "#421975";
@@ -287,7 +287,8 @@ static const Keychord keychords[] = {
     {1, {{Mod1Mask,	XK_r}},	                            spawn,		SHCMD("radio-listen") },
     {1, {{MODKEY|ShiftMask, XK_BackSpace}},             spawn,      SHCMD("power") },
     {1, {{MODKEY|ShiftMask, XK_c}},                     spawn,      SHCMD("confedit") },
-    {1, {{Mod1Mask, XK_BackSpace}},                     spawn,      SHCMD("vimmouse") },
+    {1, {{Mod1Mask, XK_BackSpace}},                     spawn,      SHCMD("gromit-mpx") },
+    {1, {{Mod1Mask|ShiftMask, XK_BackSpace}},           spawn,      SHCMD("killall gromit-mpx") },
     {1, {{MODKEY|ControlMask, XK_w}},                   spawn,      SHCMD("web-search") },
 
     //{1, MODKEY, XK_n}},                               spawn,      SHCMD(TERMINAL " -e newsboat") },
@@ -295,11 +296,14 @@ static const Keychord keychords[] = {
     {1, {{MODKEY|ShiftMask, XK_g}},                     spawn,      SHCMD("gimp") },
     {1, {{MODKEY, XK_grave}},                           spawn,      SHCMD("st") },
     {1, {{MODKEY|ShiftMask, XK_grave}},                 spawn,      SHCMD("libreoffice") },
-    {1, {{MODKEY|ShiftMask, XK_d}},                     spawn,      SHCMD("pcmanfm") },
+    {1, {{MODKEY|ShiftMask, XK_d}},                     spawn,      SHCMD("thunar") },
     {1, {{MODKEY|ShiftMask, XK_e}},                     spawn,      SHCMD(TERMINAL " -e htop") },
    // {1, {{MODKEY|ShiftMask, XK_n}},                   spawn,      SHCMD(TERMINAL " -e newsboat") },
     {1, {{MODKEY, XK_w}},                               spawn,      SHCMD(BROWSER) },
     {1, {{MODKEY|ShiftMask, XK_v}},                     spawn,      SHCMD("minitube") },
+    {1, {{MODKEY, XK_F9}},                     					spawn,      SHCMD("screenkey") },
+    {1, {{MODKEY|ShiftMask, XK_F9}},                    spawn,      SHCMD("killall screenkey") },
+    {1, {{MODKEY, XK_F12}},                     				spawn,      SHCMD("recording-menu") },
 
     //{1, {{MODKEY, XK_n}},                               spawn,      SHCMD(TERMINAL " -e neomutt") },
     {1, {{MODKEY, XK_v}},                               spawn,      SHCMD("qbittorrent") },
@@ -309,7 +313,7 @@ static const Keychord keychords[] = {
     {1, {{MODKEY|ControlMask, XK_slash}},               spawn,      SHCMD("mount-and") },
     {1, {{MODKEY|ShiftMask, XK_slash}},                 spawn,      SHCMD("umount-drives") },
     //{1, {{MODKEY, XK_c}},                               spawn,      SHCMD("galculator") },
-    {1, {{MODKEY|ControlMask, XK_r}},                   spawn,      SHCMD("mpv --untimed --no-cache --no-osc --no-input-default-bindings --profile=low-latency --input-conf=/dev/null --title=webcam /dev/video0") },
+    {1, {{MODKEY|ControlMask, XK_r}},                   spawn,      SHCMD("mpv --vf=hflip --no-resume-playback --no-input-default-bindings --untimed --no-cache --no-osc --profile=low-latency --input-conf=/dev/null --title=webcam av://v4l2:/dev/video0") },
 
     {1, {{Mod1Mask, XK_w}},                             spawn,      SHCMD(TERMINAL " -e nmtui") },
     {1, {{MODKEY|ShiftMask, XK_b}},                     spawn,      SHCMD("browser-launch") },
