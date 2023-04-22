@@ -6,7 +6,7 @@ static const int showtab			= showtab_auto;        /* Default tab bar show mode *
 static const int toptab				= True;               /* False means bottom tab bar */
 
 static const double activeopacity   = 1.0f;     /* Window opacity when it's focused (0 <= opacity <= 1) */
-static const double inactiveopacity = 0.95f;   /* Window opacity when it's inactive (0 <= opacity <= 1) */
+static const double inactiveopacity = 1.0f;   /* Window opacity when it's inactive (0 <= opacity <= 1) */
 static       Bool bUseOpacity       = True;     /* Starts with opacity on any unfocused windows */
 static const unsigned int systraypinning = 0;   /* 0: sloppy systray follows selected monitor, >0: pin systray to monitor X */
 static const unsigned int systrayonleft = 0;   	/* 0: systray in the right corner, >0: systray on left of status text */
@@ -47,9 +47,9 @@ typedef struct {
 	const char *name;
 	const void *cmd;
 } Sp;
-const char *spcmd1[] = {"alacritty", "--class", "spterm", NULL };
-const char *spcmd2[] = {"alacritty", "--class", "spfm", "-e", "ranger", NULL };
-const char *spcmd3[] = {"alacritty", "--class", "spmpc", "-e", "ncmpcpp", NULL };
+const char *spcmd1[] = {"st", "-n", "spterm", "-g", "130x30", NULL };
+const char *spcmd2[] = {"st", "-n", "spfm", "-g", "130x30", "-e", "ranger", NULL };
+const char *spcmd3[] = {"st", "-n", "spmpc", "-g", "130x30", "-e", "ncmpcpp", NULL };
 const char *spcmd4[] = {"galculator", NULL };
 static Sp scratchpads[] = {
 	/* name          cmd  */
@@ -136,7 +136,7 @@ static const Layout layouts[] = {
 
 /* commands */
 static const char *dmenucmd[] = { "dmenu_run", NULL };
-static const char *termcmd[]  = { "alacritty", NULL };
+static const char *termcmd[]  = { "st", NULL };
 
 static const Keychord keychords[] = {
 	/* modifier                     key        function        argument */
@@ -250,20 +250,20 @@ static const Keychord keychords[] = {
 
     {1, {{ShiftMask, XK_Print}},                        spawn,      SHCMD("maim -s ~/Data/screenshots/$(date +%Y-%m-%d-%s).png") },
     {1, {{0, XK_Print}},                                spawn,      SHCMD("maim ~/Data/screenshots/$(date +%Y-%m-%d-%s).png") },
-    {1, {{0, XF86XK_AudioMute}},                        spawn,      SHCMD("pamixer -t; kill -36 $(pidof dwm)") },
-    {1, {{0, XF86XK_AudioRaiseVolume}},                 spawn,      SHCMD("pactl set-sink-volume @DEFAULT_SINK@ +3%; kill -36 $(pidof dwm)") },
-    {1, {{0, XF86XK_AudioLowerVolume}},                 spawn,      SHCMD("pactl set-sink-volume @DEFAULT_SINK@ -3%; kill -36 $(pidof dwm)") },
-    {1, {{0, XF86XK_MonBrightnessUp}},                  spawn,      SHCMD("xbacklight -inc 5%; kill -38 $(pidof dwm)") },
-    {1, {{0, XF86XK_MonBrightnessDown}},                spawn,      SHCMD("xbacklight -dec 5%; kill -38 $(pidof dwm)") },
+    {1, {{0, XF86XK_AudioMute}},                        spawn,      SHCMD("wpctl set-mute @DEFAULT_AUDIO_SINK toggle; kill -36 $(pidof dwm)") },
+    {1, {{0, XF86XK_AudioRaiseVolume}},                 spawn,      SHCMD("wpctl set-volume @DEFAULT_AUDIO_SINK@ 3%+; kill -36 $(pidof dwm)") },
+    {1, {{0, XF86XK_AudioLowerVolume}},                 spawn,      SHCMD("wpctl set-volume @DEFAULT_AUDIO_SINK@ 3%-; kill -36 $(pidof dwm)") },
+    {1, {{0, XF86XK_MonBrightnessUp}},                  spawn,      SHCMD("light -A 5; kill -38 $(pidof dwm)") },
+    {1, {{0, XF86XK_MonBrightnessDown}},                spawn,      SHCMD("light -U 5; kill -38 $(pidof dwm)") },
     {1, {{0, XF86XK_AudioPrev}},                        spawn,      SHCMD("mpc prev; kill -39 $(pidof dwm)") },
     {1, {{0, XF86XK_AudioNext}},                        spawn,      SHCMD("mpc next; kill -39 $(pidof dwm)") },
     {1, {{0, XF86XK_AudioPlay}},                        spawn,      SHCMD("mpc toggle; kill -39 $(pidof dwm)") },
     {1, {{0, XF86XK_HomePage}},                         spawn,      SHCMD(BROWSER) },
-    {1, {{Mod1Mask|MODKEY, XK_equal}},                  spawn,      SHCMD("xbacklight -inc 5%; kill -38 $(pidof dwm)") },
-    {1, {{Mod1Mask|MODKEY, XK_minus}},                  spawn,      SHCMD("xbacklight -dec 5%; kill -38 $(pidof dwm)") },
+    {1, {{Mod1Mask|MODKEY, XK_equal}},                  spawn,      SHCMD("light -A 5; kill -38 $(pidof dwm)") },
+    {1, {{Mod1Mask|MODKEY, XK_minus}},                  spawn,      SHCMD("light -U 5; kill -38 $(pidof dwm)") },
 
-    {1, {{Mod1Mask, XK_Up}},                            spawn,      SHCMD("pactl set-sink-volume @DEFAULT_SINK@ +3%; kill -36 $(pidof dwm)") },
-    {1, {{Mod1Mask, XK_Down}},                          spawn,      SHCMD("pactl set-sink-volume @DEFAULT_SINK@ -3%; kill -36 $(pidof dwm)") },
+    {1, {{Mod1Mask, XK_Up}},                            spawn,      SHCMD("wpctl set-volume @DEFAULT_AUDIO_SINK@ 3%+; kill -36 $(pidof dwm)") },
+    {1, {{Mod1Mask, XK_Down}},                          spawn,      SHCMD("wpctl set-volume @DEFAULT_AUDIO_SINK@ 3%-; kill -36 $(pidof dwm)") },
     {1, {{Mod1Mask|ShiftMask, XK_space}},               spawn,      SHCMD("mpc toggle; kill -39 $(pidof dwm)") },
     {1, {{Mod1Mask|ShiftMask, XK_Right}},               spawn,      SHCMD("mpc next; kill -39 $(pidof dwm)") },
     {1, {{Mod1Mask|ShiftMask, XK_Left}},                spawn,      SHCMD("mpc prev; kill -39 $(pidof dwm)") },
@@ -312,12 +312,12 @@ static const Keychord keychords[] = {
 		{1, {{MODKEY, XK_slash}},                           spawn,      SHCMD("mount-drives") },
     {1, {{MODKEY|ControlMask, XK_slash}},               spawn,      SHCMD("mount-and") },
     {1, {{MODKEY|ShiftMask, XK_slash}},                 spawn,      SHCMD("umount-drives") },
-    //{1, {{MODKEY, XK_c}},                               spawn,      SHCMD("galculator") },
-    {1, {{MODKEY|ControlMask, XK_r}},                   spawn,      SHCMD("mpv --vf=hflip --no-resume-playback --no-input-default-bindings --untimed --no-cache --no-osc --profile=low-latency --input-conf=/dev/null --title=webcam av://v4l2:/dev/video0") },
+    {1, {{MODKEY, XK_e}},                     					spawn,      SHCMD("qr-gen") },
+    {1, {{MODKEY|ControlMask, XK_r}},                   spawn,      SHCMD("webcam-show") },
 
     {1, {{Mod1Mask, XK_w}},                             spawn,      SHCMD(TERMINAL " -e nmtui") },
     {1, {{MODKEY|ShiftMask, XK_b}},                     spawn,      SHCMD("browser-launch") },
-    {1, {{MODKEY|ShiftMask, XK_m}},                     spawn,      SHCMD("mpv $(xclip -o -rmlastnl -selection clipboard)") },
+    {1, {{MODKEY|ShiftMask, XK_m}},                     spawn,      SHCMD("mpv-play)") },
     {1, {{MODKEY, XK_d}},                               spawn,      SHCMD("clipgrab") },
     {1, {{MODKEY, XK_z}},                               spawn,      SHCMD("clipmenu") },
     {1, {{MODKEY|ShiftMask, XK_a}},                     spawn,      SHCMD("rofi -show drun -show-icons") },
