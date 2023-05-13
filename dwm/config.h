@@ -304,6 +304,10 @@ static const Keychord keychords[] = {
     {1, {{MODKEY, XK_F9}},                     					spawn,      SHCMD("screenkey") },
     {1, {{MODKEY|ShiftMask, XK_F9}},                    spawn,      SHCMD("killall screenkey") },
     {1, {{MODKEY, XK_F12}},                     				spawn,      SHCMD("recording-menu") },
+    {1, {{MODKEY|ShiftMask, XK_F12}},                   spawn,      SHCMD("killall ffmpeg") },
+
+    {1, {{MODKEY, XK_u}},                               spawn,      SHCMD("redshift -P -O 6300") },
+    {1, {{MODKEY|ShiftMask, XK_u}},                     spawn,      SHCMD("redshift -P -O 5000") },
 
     //{1, {{MODKEY, XK_n}},                               spawn,      SHCMD(TERMINAL " -e neomutt") },
     {1, {{MODKEY, XK_v}},                               spawn,      SHCMD("qbittorrent") },
